@@ -18,7 +18,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/kebele', kebeleRoutes);
 
 // Root route
-app.get('/', (req, res) => {
+app.get('/', (req: express.Request, res: express.Response) => {
   res.json({ message: 'Ethiopian Fertilizer Tracking API is running' });
 });
 

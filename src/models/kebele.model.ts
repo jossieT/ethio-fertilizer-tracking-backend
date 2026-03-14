@@ -17,7 +17,7 @@ export class KebeleModel {
     const { rows } = await pool.query(query, [kebeleId, season]);
     
     // Mapping keys to match the required UI format
-    return rows.map(row => ({
+    return rows.map((row: any) => ({
       fType: row['F-Type'],
       demand_collected: parseFloat(row['Demand Collected (Qt)']),
       demand_intelligence: parseFloat(row['Demand Intelligence (Qt)']),
