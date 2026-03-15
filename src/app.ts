@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
 import kebeleRoutes from './routes/kebele.routes';
 import demandRoutes from './routes/demand.routes';
-import demandV2Routes from './routes/demand.v2.routes';
 import farmerRoutes from './routes/farmer.routes';
 import supplyRoutes from './routes/supply.routes';
 import { errorHandler } from './middleware/error.middleware';
@@ -20,7 +19,7 @@ app.use(morgan('dev'));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/kebele', kebeleRoutes);
-app.use('/api/demands', demandV2Routes);
+app.use('/api/demands', demandRoutes);
 app.use('/api/farmers', farmerRoutes);
 app.use('/api/supply', supplyRoutes);
 

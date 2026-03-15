@@ -13,18 +13,25 @@ export class DemandController {
 
     const { 
       farmer_id, demand_year, season_irrigation, season_meher, 
-      season_belg, fert_type_id, amount_needed_qt, notes 
+      season_belg, fert_type, amount_needed_qt, 
+      crop_cereal, crop_pulse, crop_oils, crop_horti, crop_rootcrop
     } = req.body;
 
     try {
-      // Check if farmer exists and belongs to the user's kebele (if user is Kebele staff)
+      // Check if farmer exists
       const farmer = await FarmerModel.findById(farmer_id);
       if (!farmer) {
         return res.status(404).json({ message: 'Farmer not found' });
       }
 
+      // Authorization: Kebele staff can only register for their kebele
       if (req.user?.role === 'Kebele' && farmer.kebele_id !== req.user.kebeleId) {
         return res.status(403).json({ message: 'You can only register demand for farmers in your kebele' });
+      }
+
+      // Restrict to Urea and DAP
+      if (!['Urea', 'DAP'].includes(fert_type)) {
+        return res.status(400).json({ message: 'Invalid fertilizer type. Only Urea and DAP are allowed.' });
       }
 
       const demand = await DemandModel.create({
@@ -33,10 +40,14 @@ export class DemandController {
         season_irrigation,
         season_meher,
         season_belg,
-        fert_type_id,
+        fert_type,
         amount_needed_qt,
-        registered_by: req.user!.userId,
-        notes
+        crop_cereal,
+        crop_pulse,
+        crop_oils,
+        crop_horti,
+        crop_rootcrop,
+        registered_by: req.user!.userId
       });
 
       res.status(201).json(demand);
@@ -87,15 +98,11 @@ export class DemandController {
     }
 
     try {
-      // Check if demand exists
       const demand = await DemandModel.getById(parseInt(id as string));
       if (!demand) {
         return res.status(404).json({ message: 'Demand request not found' });
       }
 
-      // Business logic: only approvers can change status
-      // We'll check roles in routes, but adding extra guard here if needed
-      
       const success = await DemandModel.updateStatus(parseInt(id as string), status, req.user!.userId);
       if (success) {
         res.json({ message: `Demand request ${status.toLowerCase()} successfully` });

@@ -4,9 +4,11 @@ import { FarmerDemand, FarmerDemandWithDetails } from '../types/demand.types';
 export class DemandModel {
   static async create(data: Partial<FarmerDemand>): Promise<FarmerDemand> {
     const query = `
-      INSERT INTO farmer_demand 
-      (farmer_id, demand_year, season_irrigation, season_meher, season_belg, fert_type_id, amount_needed_qt, registered_by, notes)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO demands 
+      (farmer_id, demand_year, season_irrigation, season_meher, season_belg, 
+       fert_type, amount_needed_qt, crop_cereal, crop_pulse, crop_oils, 
+       crop_horti, crop_rootcrop, registered_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING *
     `;
     const { rows } = await pool.query(query, [
@@ -15,10 +17,14 @@ export class DemandModel {
       data.season_irrigation || false,
       data.season_meher || false,
       data.season_belg || false,
-      data.fert_type_id,
+      data.fert_type,
       data.amount_needed_qt,
-      data.registered_by,
-      data.notes
+      data.crop_cereal,
+      data.crop_pulse,
+      data.crop_oils,
+      data.crop_horti,
+      data.crop_rootcrop,
+      data.registered_by
     ]);
     return rows[0];
   }
@@ -43,7 +49,7 @@ export class DemandModel {
     const conditions: string[] = [];
 
     if (search) {
-      conditions.push(`(f.full_name ILIKE $${paramIndex} OR f.farmer_unique_id ILIKE $${paramIndex})`);
+      conditions.push(`(f.full_name ILIKE $${paramIndex} OR f.unique_farmer_id ILIKE $${paramIndex})`);
       params.push(`%${search}%`);
       paramIndex++;
     }
@@ -95,7 +101,7 @@ export class DemandModel {
 
   static async updateStatus(id: number, status: string, approvedBy: string): Promise<boolean> {
     const query = `
-      UPDATE farmer_demand 
+      UPDATE demands 
       SET approval_status = $1, approved_by = $2, approved_date = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
       WHERE demand_id = $3
     `;
@@ -106,34 +112,51 @@ export class DemandModel {
   private static baseSelectQuery = `
     SELECT 
       d.demand_id,
+      f.farmer_id,
       f.full_name as farmer_name,
-      f.sex,
+      f.unique_farmer_id,
+      f.gender as sex,
       k.kebele_name as kebele,
       w.woreda_name as woreda,
       z.zone_name as zone,
-      ft.fert_name as fertilizer_type,
+      d.fert_type as fertilizer_type,
       d.amount_needed_qt as amount,
-      d.approval_status as status
-    FROM farmer_demand d
+      d.approval_status as status,
+      d.crop_cereal,
+      d.crop_pulse,
+      d.crop_oils,
+      d.crop_horti,
+      d.crop_rootcrop,
+      d.request_date
+    FROM demands d
     JOIN farmers f ON d.farmer_id = f.farmer_id
     JOIN kebeles k ON f.kebele_id = k.kebele_id
     JOIN woredas w ON k.woreda_id = w.woreda_id
     JOIN zones z ON w.zone_id = z.zone_id
-    JOIN fertilizer_types ft ON d.fert_type_id = ft.fert_type_id
   `;
 
   private static mapToDetails(row: any): FarmerDemandWithDetails {
     return {
       demand_id: row.demand_id,
       request_id: `REQ-${row.demand_id.toString().padStart(4, '0')}`,
+      farmer_id: row.farmer_id,
       farmer_name: row.farmer_name,
+      farmer_unique_id: row.unique_farmer_id,
       sex: row.sex,
       kebele: row.kebele,
       woreda: row.woreda,
       zone: row.zone,
       fertilizer_type: row.fertilizer_type,
       amount: `${row.amount} Qt`,
-      status: row.status
+      status: row.status,
+      crop_details: {
+        cereal: row.crop_cereal,
+        pulse: row.crop_pulse,
+        oils: row.crop_oils,
+        horti: row.crop_horti,
+        rootcrop: row.crop_rootcrop
+      },
+      request_date: row.request_date
     };
   }
 }
