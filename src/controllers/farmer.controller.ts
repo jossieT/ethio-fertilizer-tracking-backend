@@ -11,8 +11,21 @@ export class FarmerController {
     }
 
     try {
+      const {
+        uniqueFarmerId, fullName, gender, phoneNumber, address,
+        farmAreaHectares, photoUrl, landCertificateUrl, kebeleId
+      } = req.body;
+
       const data = {
-        ...req.body,
+        unique_farmer_id: uniqueFarmerId,
+        full_name: fullName,
+        gender,
+        phone_number: phoneNumber,
+        address,
+        farm_area_hectares: farmAreaHectares,
+        photo_url: photoUrl,
+        land_certificate_url: landCertificateUrl,
+        kebele_id: kebeleId,
         registered_by: req.user!.userId
       };
 

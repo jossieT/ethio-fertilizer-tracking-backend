@@ -26,4 +26,31 @@ export class UserModel {
     const { rows } = await pool.query(query, [kebeleId]);
     return rows.length ? rows[0] : null;
   }
+
+  static async findByUsername(username: string): Promise<User | null> {
+    const query = 'SELECT * FROM users WHERE username = $1';
+    const { rows } = await pool.query(query, [username]);
+    return rows.length ? rows[0] : null;
+  }
+
+  static async register(data: Partial<User>): Promise<User> {
+    const query = `
+      INSERT INTO users (full_name, username, email, phone, password_hash, role, region_id, zone_id, woreda_id, kebele_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *
+    `;
+    const { rows } = await pool.query(query, [
+      data.full_name,
+      data.username,
+      data.email,
+      data.phone,
+      data.password_hash,
+      data.role,
+      data.region_id,
+      data.zone_id,
+      data.woreda_id,
+      data.kebele_id
+    ]);
+    return rows[0];
+  }
 }

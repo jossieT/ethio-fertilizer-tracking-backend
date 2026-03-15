@@ -1,8 +1,10 @@
-export type UserRole = 'Federal' | 'Region' | 'Zone' | 'Woreda' | 'Kebele';
+export type UserRole = 'Federal' | 'Region' | 'Zone' | 'Woreda' | 'Kebele' | 'KEBELE_DA' | 'WOREDA_ADMIN' | 'ZONE_ADMIN' | 'REGION_ADMIN' | 'FEDERAL_ADMIN';
 
 export interface User {
   user_id: string;
   full_name: string;
+  username?: string;
+  email?: string;
   phone: string;
   password_hash: string;
   role: UserRole;
