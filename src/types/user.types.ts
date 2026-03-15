@@ -1,7 +1,7 @@
 export type UserRole = 'Federal' | 'Region' | 'Zone' | 'Woreda' | 'Kebele';
 
 export interface User {
-  user_id: number;
+  user_id: string;
   full_name: string;
   phone: string;
   password_hash: string;

@@ -3,6 +3,8 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
 import kebeleRoutes from './routes/kebele.routes';
+import demandRoutes from './routes/demand.routes';
+import farmerRoutes from './routes/farmer.routes';
 import { errorHandler } from './middleware/error.middleware';
 
 dotenv.config();
@@ -16,6 +18,8 @@ app.use(morgan('dev'));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/kebele', kebeleRoutes);
+app.use('/api/demands', demandRoutes);
+app.use('/api/farmers', farmerRoutes);
 
 // Root route
 app.get('/', (req: express.Request, res: express.Response) => {

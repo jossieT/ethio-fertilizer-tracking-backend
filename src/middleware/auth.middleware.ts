@@ -4,7 +4,7 @@ import { UserRole } from '../types/user.types';
 
 export interface AuthRequest extends Request {
   user?: {
-    userId: number;
+    userId: string;
     role: UserRole;
     kebeleId?: number;
   };

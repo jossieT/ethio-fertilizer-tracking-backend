@@ -8,7 +8,7 @@ export class UserModel {
     return rows.length ? rows[0] : null;
   }
 
-  static async findById(id: number): Promise<User | null> {
+  static async findById(id: string): Promise<User | null> {
     const query = 'SELECT * FROM users WHERE user_id = $1';
     const { rows } = await pool.query(query, [id]);
     return rows.length ? rows[0] : null;

@@ -32,8 +32,10 @@ CREATE TABLE kebeles (
 -- 2. User Management
 CREATE TYPE user_role AS ENUM ('Federal', 'Region', 'Zone', 'Woreda', 'Kebele');
 
+CREATE SEQUENCE user_display_id_seq START WITH 1;
+
 CREATE TABLE users (
-    user_id SERIAL PRIMARY KEY,
+    user_id TEXT PRIMARY KEY DEFAULT ('UID' || LPAD(nextval('user_display_id_seq')::text, 3, '0')),
     full_name VARCHAR(200) NOT NULL,
     phone VARCHAR(20) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
@@ -56,18 +58,52 @@ CREATE TABLE fertilizer_types (
 -- 4. Farmers
 CREATE TABLE farmers (
     farmer_id SERIAL PRIMARY KEY,
-    full_name VARCHAR(200) NOT NULL,
-    gender VARCHAR(10),
-    phone VARCHAR(20),
-    kebele_id INT REFERENCES kebeles(kebele_id),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    unique_farmer_id VARCHAR(255) UNIQUE NOT NULL,
+    full_name VARCHAR(150) NOT NULL,
+    gender VARCHAR(10) CHECK (gender IN ('Male', 'Female', 'Other')),
+    phone_number VARCHAR(20),
+    address TEXT,
+    farm_area_hectares NUMERIC(8,2),
+    photo_url TEXT,
+    land_certificate_url TEXT,
+    kebele_id INT REFERENCES kebeles(kebele_id) ON DELETE SET NULL,
+    registered_by TEXT REFERENCES users(user_id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 5. Fertilizer Demand Calculation (Per Farmer)
+CREATE INDEX idx_farmers_kebele ON farmers(kebele_id);
+CREATE INDEX idx_farmers_unique_id ON farmers(unique_farmer_id);
+
+-- 5. Farmer Demand Requests
+CREATE TABLE farmer_demand (
+    demand_id SERIAL PRIMARY KEY,
+    farmer_id INT NOT NULL REFERENCES farmers(farmer_id) ON DELETE CASCADE,
+    demand_year VARCHAR(10) NOT NULL, -- e.g., '2017/18'
+    season_irrigation BOOLEAN DEFAULT FALSE,
+    season_meher BOOLEAN DEFAULT FALSE,
+    season_belg BOOLEAN DEFAULT FALSE,
+    fert_type_id INT NOT NULL REFERENCES fertilizer_types(fert_type_id),
+    amount_needed_qt NUMERIC(10,2) NOT NULL,
+    request_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    registered_by TEXT REFERENCES users(user_id),
+    approval_status VARCHAR(20) DEFAULT 'Pending' CHECK (approval_status IN ('Pending', 'Approved', 'Rejected')),
+    approved_by TEXT REFERENCES users(user_id),
+    approved_date TIMESTAMP,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_farmer_demand_farmer ON farmer_demand(farmer_id);
+CREATE INDEX idx_farmer_demand_year ON farmer_demand(demand_year);
+CREATE INDEX idx_farmer_demand_status ON farmer_demand(approval_status);
+
+-- 6. Fertilizer Demand Calculation (Kebele/Farmer Auto-Calc)
 CREATE TABLE farmer_auto_calc_demand (
     calc_id SERIAL PRIMARY KEY,
     farmer_id INT REFERENCES farmers(farmer_id) ON DELETE CASCADE,
-    year_season VARCHAR(20) NOT NULL, -- e.g., '2017/18'
+    year_season VARCHAR(20) NOT NULL, 
     crop VARCHAR(100),
     land_allocated_ha DECIMAL(10, 2),
     fert_type_id INT REFERENCES fertilizer_types(fert_type_id),
@@ -75,7 +111,7 @@ CREATE TABLE farmer_auto_calc_demand (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 6. Kebele Fertilizer Demand Summary
+-- 7. Kebele Fertilizer Demand Summary
 CREATE TABLE kebele_fert_demand_summary (
     kfdid SERIAL PRIMARY KEY,
     kebele_id INT REFERENCES kebeles(kebele_id) ON DELETE CASCADE,
@@ -108,6 +144,18 @@ VALUES ('Alemu Ketema', '0912345678', '$2b$10$W9eB.PppjhTLOBMnLpsQWemXFMK0sIiUrI
 
 -- Fertilizer Types
 INSERT INTO fertilizer_types (fert_name) VALUES ('Urea'), ('DAP'), ('NPS'), ('NPSB');
+
+-- Sample Farmers
+INSERT INTO farmers (full_name, sex, kebele_id, farmer_unique_id, phone_number, registered_by)
+VALUES 
+('Girma Kasahun', 'Male', (SELECT kebele_id FROM kebeles WHERE kebele_name = 'Test Kebele'), 'NID001', '0987654321', 'UID001'),
+('Abebech Tadesse', 'Female', (SELECT kebele_id FROM kebeles WHERE kebele_name = 'Test Kebele'), 'NID002', '0987654322', 'UID001');
+
+-- Sample Demands
+INSERT INTO farmer_demand (farmer_id, demand_year, season_meher, fert_type_id, amount_needed_qt, registered_by)
+VALUES 
+(1, '2017/18', true, (SELECT fert_type_id FROM fertilizer_types WHERE fert_name = 'Urea'), 150.50, 'UID001'),
+(2, '2017/18', true, (SELECT fert_type_id FROM fertilizer_types WHERE fert_name = 'DAP'), 200.00, 'UID001');
 
 -- Sample Summary Data for Dashboard
 INSERT INTO kebele_fert_demand_summary 
